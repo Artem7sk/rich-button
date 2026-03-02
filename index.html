@@ -7,96 +7,114 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
-            background-color: #000;
+            background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
             color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Montserrat', sans-serif;
             overflow: hidden;
             flex-direction: column;
         }
         
         .score-container {
-            margin-bottom: 20px;
+            margin-bottom: 30px;
             text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
         }
 
-        .score-label { font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
-        .score-value { font-size: 32px; font-weight: bold; color: #ffd700; }
+        .score-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
+        .score-value { font-size: 36px; font-weight: 900; color: #ffd700; text-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
 
+        /* Улучшенная Кнопка */
         .rich-button {
-            width: 180px;
-            height: 180px;
-            background: radial-gradient(circle, #ffeb3b, #fbc02d);
+            width: 220px;
+            height: 220px;
+            background: linear-gradient(145deg, #ffd700, #b8860b);
             border-radius: 50%;
-            border: 6px solid #f57f17;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            border: 10px solid #222;
+            box-shadow: 20px 20px 60px #000, -5px -5px 20px rgba(255, 215, 0, 0.2), inset 0 0 20px rgba(255,255,255,0.5);
             cursor: pointer;
             outline: none;
-            transition: transform 0.05s;
-            animation: pulse 2s infinite;
+            transition: all 0.1s ease;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 60px;
+            text-align: center;
+            padding: 20px;
+            animation: pulse 2s infinite;
+            position: relative;
+        }
+
+        .button-text {
+            color: #4a3500;
+            font-weight: 900;
+            font-size: 18px;
+            line-height: 1.2;
+            text-transform: uppercase;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.3);
         }
 
         .rich-button:active {
-            transform: scale(0.92);
+            transform: scale(0.95);
             box-shadow: 0 0 10px #ffd700;
+            background: linear-gradient(145deg, #b8860b, #ffd700);
         }
 
         @keyframes pulse {
-            0% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
-            50% { box-shadow: 0 0 50px rgba(255, 215, 0, 0.7); }
-            100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
+            0% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
+            50% { transform: scale(1.02); box-shadow: 0 0 40px rgba(255, 215, 0, 0.6); }
+            100% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
         }
-
-        h1 { margin-top: 25px; font-size: 20px; letter-spacing: 2px; }
     </style>
 </head>
 <body>
 
     <div class="score-container">
-        <div class="score-label">Твой вклад в мечту</div>
+        <div class="score-label">Твой вклад</div>
         <div id="user-score" class="score-value">0</div>
     </div>
 
-    <button class="rich-button" onclick="sendClick()">💰</button>
+    <button class="rich-button" id="mainBtn">
+        <span class="button-text">НАЖМИ,<br>ЧТОБЫ СТАТЬ<br>БОГАТЫМ</span>
+    </button>
 
-    <h1>КЛУБ БОГАЧЕЙ</h1>
-
-    <audio id="coin-sound" src="https://www.soundjay.com/misc/sounds/coin-spill-1.mp3" preload="auto"></audio>
+    <audio id="coin-sound" preload="auto">
+        <source src="https://actions.google.com/sounds/v1/cartoon/coins_clanking_small.ogg" type="audio/ogg">
+    </audio>
 
     <script>
         const tg = window.Telegram.WebApp;
+        const audio = document.getElementById('coin-sound');
+        const btn = document.getElementById('mainBtn');
+        
         tg.expand();
 
-        // Получаем количество нажатий из URL
         const urlParams = new URLSearchParams(window.location.search);
-        const startScore = urlParams.get('score') || '0';
-        document.getElementById('user-score').innerText = startScore;
+        document.getElementById('user-score').innerText = urlParams.get('score') || '0';
 
-        function sendClick() {
-            // 1. Вибрация (Haptic Feedback)
+        btn.addEventListener('click', () => {
+            // 1. Вибрация
             if (tg.HapticFeedback) {
                 tg.HapticFeedback.impactOccurred('heavy');
             }
 
-            // 2. Звук
-            const audio = document.getElementById('coin-sound');
+            // 2. Звук (форсируем воспроизведение)
             audio.currentTime = 0;
-            audio.play();
+            audio.play().catch(e => console.log("Ошибка звука:", e));
 
-            // 3. Отправка данных боту
-            tg.sendData("rich_button_clicked");
-            
-            // Опционально: закрыть через секунду, чтобы успеть услышать звук
-            setTimeout(() => { tg.close(); }, 500);
-        }
+            // 3. Отправка данных
+            setTimeout(() => {
+                tg.sendData("rich_button_clicked");
+                tg.close(); // Оставляем закрытие, чтобы юзер видел счет на оплату
+            }, 300);
+        });
     </script>
 </body>
 </html>
