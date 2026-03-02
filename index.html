@@ -18,6 +18,7 @@
             font-family: 'Montserrat', sans-serif;
             overflow: hidden;
             flex-direction: column;
+            position: relative; /* Для монет */
         }
 
         /* Контейнер для счета */
@@ -30,17 +31,20 @@
             backdrop-filter: blur(15px);
             border: 1px solid rgba(255, 215, 0, 0.1);
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 10;
         }
 
         .score-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 5px; }
         .score-value { font-size: 38px; font-weight: 900; color: #ffd700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
 
-        /* ЭЛИТНАЯ ЗОЛОТАЯ КНОПКА */
+        /* ЭЛИТНАЯ ЗОЛОТАЯ КНОПКА (Обновленные стили Luxury) */
         .rich-button {
             width: 240px;
             height: 240px;
             position: relative;
-            background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+            /* Более сложный, зеркальный градиент */
+            background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
             border-radius: 50%;
             border: 8px solid #1a1a1a;
             cursor: pointer;
@@ -49,32 +53,33 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            /* Объемные тени */
+            /* Объемные тени и свечение */
             box-shadow: 
-                0 0 0 10px rgba(255, 215, 0, 0.05),
-                0 20px 50px rgba(0, 0, 0, 0.8),
-                inset 0 5px 15px rgba(255, 255, 255, 0.6),
-                inset 0 -5px 15px rgba(0, 0, 0, 0.4);
+                0 0 0 10px rgba(255, 215, 0, 0.03),
+                0 30px 60px rgba(0, 0, 0, 0.9),
+                inset 0 10px 25px rgba(255, 255, 255, 0.7),
+                inset 0 -10px 25px rgba(0, 0, 0, 0.5);
             transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             overflow: hidden;
+            z-index: 20;
         }
 
-        /* Блик, бегающий по кнопке */
+        /* Улучшенный блик (бегает реже, но ярче) */
         .rich-button::after {
             content: "";
             position: absolute;
             top: -50%;
-            left: -50%;
-            width: 200%;
+            left: -150%;
+            width: 100%;
             height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+            background: linear-gradient(75deg, transparent, rgba(255,255,255,0.6), transparent);
             transform: rotate(45deg);
-            animation: shine 4s infinite;
+            animation: shine 6s infinite ease-out;
         }
 
         .button-text {
             position: relative;
-            z-index: 2;
+            z-index: 5;
             color: #4a3500;
             font-weight: 900;
             font-size: 20px;
@@ -85,30 +90,39 @@
         }
 
         .rich-button:active {
-            transform: scale(0.94);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.9), inset 0 0 20px rgba(0,0,0,0.5);
+            transform: scale(0.92);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.9), inset 0 0 25px rgba(0,0,0,0.6);
         }
 
         @keyframes shine {
             0% { left: -150%; }
-            20% { left: 150%; }
-            100% { left: 150%; }
+            15% { left: 200%; }
+            100% { left: 200%; }
         }
 
-        .footer-text { margin-top: 30px; font-size: 10px; color: #444; letter-spacing: 4px; text-transform: uppercase; }
+        .footer-text { margin-top: 30px; font-size: 10px; color: #333; letter-spacing: 4px; text-transform: uppercase; z-index: 10; }
+
+        /* СТИЛИ ЧАСТИЦ (МОНЕТ) */
+        .coin-particle {
+            position: absolute;
+            font-size: 24px; /* Эмодзи монетки */
+            pointer-events: none;
+            z-index: 100; /* Поверх всего */
+            opacity: 1;
+            transform: scale(1);
+        }
 
     </style>
 </head>
 <body>
 
     <div class="score-container">
-        <div class="score-label">ЛИЧНЫЙ КАПИТАЛ</div>
+        <div class="score-label">ТВОЙ КАПИТАЛ</div>
         <div id="user-score" class="score-value">0</div>
     </div>
 
     <button class="rich-button" id="mainBtn">
         <span class="button-text">НАЖМИ,<br>ЧТОБЫ СТАТЬ<br>БОГАТЫМ</span>
-
     </button>
 
     <div class="footer-text">Verified Status: 50 Stars</div>
@@ -129,20 +143,93 @@
         const urlParams = new URLSearchParams(window.location.search);
         document.getElementById('user-score').innerText = urlParams.get('score') || '0';
 
+        // --- СИСТЕМА ФЕЙЕРВЕРКА МОНЕТ ---
+        function createCoinExplosion() {
+            // Получаем координаты центра кнопки
+            const btnRect = btn.getBoundingClientRect();
+            const centerX = btnRect.left + btnRect.width / 2;
+            const centerY = btnRect.top + btnRect.height / 2;
+
+            const coinCount = 15; // Сколько монет вылетит
+
+            for (let i = 0; i < coinCount; i++) {
+                // Создаем элемент монеты
+                const coin = document.createElement('div');
+                coin.className = 'coin-particle';
+                coin.innerText = '💰'; // Пока эмодзи, можно заменить на картинку
+                document.body.appendChild(coin);
+
+                // Случайный угол и сила вылета
+                const angle = Math.random() * Math.PI * 2; // Угол от 0 до 360 градусов
+                const velocity = Math.random() * 8 + 5; // Скорость от 5 до 13
+                
+                // Начальная позиция — центр кнопки
+                let posX = centerX;
+                let posY = centerY;
+                
+                // Векторы скорости
+                let velX = Math.cos(angle) * velocity;
+                let velY = Math.sin(angle) * velocity - 3; // Небольшое ускорение вверх
+
+                // Гравитация и сопротивление воздуха
+                const gravity = 0.5;
+                const friction = 0.98;
+                
+                let opacity = 1;
+                let scale = 1;
+
+                // Функция анимации одной монеты
+                const animateCoin = () => {
+                    velX *= friction;
+                    velY = velY * friction + gravity; // Гравитация тянет вниз
+
+                    posX += velX;
+                    posY += velY;
+                    
+                    opacity -= 0.02; // Монета затухает
+                    scale -= 0.005; // И уменьшается
+
+                    // Применяем стили
+                    coin.style.left = `${posX}px`;
+                    coin.style.top = `${posY}px`;
+                    coin.style.opacity = opacity;
+                    coin.style.transform = `translate(-50%, -50%) scale(${scale})`;
+
+                    // Продолжаем, пока монета видна
+                    if (opacity > 0) {
+                        requestAnimationFrame(animateCoin);
+                    } else {
+                        coin.remove(); // Удаляем монету, когда она затухла
+                    }
+                };
+
+                // Запускаем анимацию
+                requestAnimationFrame(animateCoin);
+            }
+        }
+        // ------------------------------------
+
         btn.addEventListener('click', () => {
+            // 1. Вибрация
             if (tg.HapticFeedback) {
                 tg.HapticFeedback.impactOccurred('heavy');
             }
 
+            // 2. Звук
             audio.currentTime = 0;
             audio.play().catch(e => console.log("Sound error:", e));
 
+            // 3. ФЕЙЕРВЕРК МОНЕТ!
+            createCoinExplosion();
+
+            // Эффект нажатия (scale)
             btn.style.transform = "scale(0.92)";
             
+            // Ждем анимацию и закрываем
             setTimeout(() => {
                 tg.sendData("rich_button_clicked");
                 tg.close();
-            }, 400);
+            }, 600); // Чуть дольше, чтобы насладиться монетами
         });
     </script>
 </body>
