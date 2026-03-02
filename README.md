@@ -1,4 +1,6 @@
-# 💎 Richest Button Club | Official Mini App
+"Richest Button: The Digital Artifact of Wealth. 💎"
+
+Есть миллионы ботов, но только одна Кнопка, подтверждающая твой статус. Нажми, если веришь в свою удачу. 50 Stars — входной билет в мир, где цифры работают на тебя.
 
 ![Banner](https://img.shields.io/badge/Status-Elite-gold?style=for-the-badge)
 ![Stars](https://img.shields.io/badge/Price-50_Stars-blue?style=for-the-badge&logo=telegram)
