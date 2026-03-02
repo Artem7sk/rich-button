@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rich Button</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+            font-family: sans-serif;
+            overflow: hidden;
+        }
+        .container { text-align: center; }
+        
+        /* Золотая пульсирующая кнопка */
+        .rich-button {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, #ffd700, #b8860b);
+            border-radius: 50%;
+            border: 8px solid #8b6508;
+            box-shadow: 0 0 20px #ffd700;
+            cursor: pointer;
+            outline: none;
+            transition: transform 0.1s;
+            animation: pulse 2s infinite;
+        }
+
+        .rich-button:active {
+            transform: scale(0.9);
+            box-shadow: 0 0 5px #ffd700;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 20px #ffd700; }
+            50% { box-shadow: 0 0 50px #ffd700; }
+            100% { box-shadow: 0 0 20px #ffd700; }
+        }
+
+        h1 { margin-top: 20px; font-size: 24px; text-shadow: 2px 2px 4px #000; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="rich-button" onclick="sendClick()"></button>
+        <h1>СТАТЬ БОГАТЫМ</h1>
+    </div>
+
+    <script>
+        // Инициализируем WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Расширяем на все окно
+
+        function sendClick() {
+            // 2. ОТПРАВЛЯЕМ ДАННЫЕ БОТУ
+            tg.sendData("rich_button_clicked");
+            
+            // Закрываем окно после клика (необязательно, но для оплаты Stars удобно)
+            tg.close();
+        }
+    </script>
+</body>
+</html>
