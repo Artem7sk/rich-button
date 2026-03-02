@@ -2,12 +2,13 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rich Club</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Richest Button Club</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;900&display=swap" rel="stylesheet">
     <style>
         body {
-            background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -18,72 +19,98 @@
             overflow: hidden;
             flex-direction: column;
         }
-        
+
+        /* Контейнер для счета */
         .score-container {
-            margin-bottom: 30px;
+            margin-bottom: 40px;
             text-align: center;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 15px 30px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 215, 0, 0.2);
+            background: rgba(255, 255, 255, 0.03);
+            padding: 15px 40px;
+            border-radius: 50px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 215, 0, 0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        .score-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
-        .score-value { font-size: 36px; font-weight: 900; color: #ffd700; text-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
+        .score-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 5px; }
+        .score-value { font-size: 38px; font-weight: 900; color: #ffd700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
 
-        /* Улучшенная Кнопка */
+        /* ЭЛИТНАЯ ЗОЛОТАЯ КНОПКА */
         .rich-button {
-            width: 220px;
-            height: 220px;
-            background: linear-gradient(145deg, #ffd700, #b8860b);
+            width: 240px;
+            height: 240px;
+            position: relative;
+            background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
             border-radius: 50%;
-            border: 10px solid #222;
-            box-shadow: 20px 20px 60px #000, -5px -5px 20px rgba(255, 215, 0, 0.2), inset 0 0 20px rgba(255,255,255,0.5);
+            border: 8px solid #1a1a1a;
             cursor: pointer;
             outline: none;
-            transition: all 0.1s ease;
             display: flex;
             justify-content: center;
             align-items: center;
             text-align: center;
-            padding: 20px;
-            animation: pulse 2s infinite;
-            position: relative;
+            /* Объемные тени */
+            box-shadow: 
+                0 0 0 10px rgba(255, 215, 0, 0.05),
+                0 20px 50px rgba(0, 0, 0, 0.8),
+                inset 0 5px 15px rgba(255, 255, 255, 0.6),
+                inset 0 -5px 15px rgba(0, 0, 0, 0.4);
+            transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: hidden;
+        }
+
+        /* Блик, бегающий по кнопке */
+        .rich-button::after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+            transform: rotate(45deg);
+            animation: shine 4s infinite;
         }
 
         .button-text {
+            position: relative;
+            z-index: 2;
             color: #4a3500;
             font-weight: 900;
-            font-size: 18px;
-            line-height: 1.2;
+            font-size: 20px;
+            line-height: 1.1;
             text-transform: uppercase;
-            text-shadow: 1px 1px 0px rgba(255,255,255,0.3);
+            letter-spacing: -0.5px;
+            pointer-events: none;
         }
 
         .rich-button:active {
-            transform: scale(0.95);
-            box-shadow: 0 0 10px #ffd700;
-            background: linear-gradient(145deg, #b8860b, #ffd700);
+            transform: scale(0.94);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.9), inset 0 0 20px rgba(0,0,0,0.5);
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
-            50% { transform: scale(1.02); box-shadow: 0 0 40px rgba(255, 215, 0, 0.6); }
-            100% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
+        @keyframes shine {
+            0% { left: -150%; }
+            20% { left: 150%; }
+            100% { left: 150%; }
         }
+
+        .footer-text { margin-top: 30px; font-size: 10px; color: #444; letter-spacing: 4px; text-transform: uppercase; }
+
     </style>
 </head>
 <body>
 
     <div class="score-container">
-        <div class="score-label">Твой вклад</div>
+        <div class="score-label">ЛИЧНЫЙ КАПИТАЛ</div>
         <div id="user-score" class="score-value">0</div>
     </div>
 
     <button class="rich-button" id="mainBtn">
-        <span class="button-text">НАЖМИ,<br>ЧТОБЫ СТАТЬ<br>БОГАТЫМ</span>
+        <span class="button-text">НАЖМИ<br>И ПОЛУЧИ<br>УДАЧУ</span>
     </button>
+
+    <div class="footer-text">Verified Status: 50 Stars</div>
 
     <audio id="coin-sound" preload="auto">
         <source src="https://actions.google.com/sounds/v1/cartoon/coins_clanking_small.ogg" type="audio/ogg">
@@ -95,25 +122,26 @@
         const btn = document.getElementById('mainBtn');
         
         tg.expand();
+        tg.backgroundColor = '#000000';
+        tg.headerColor = '#000000';
 
         const urlParams = new URLSearchParams(window.location.search);
         document.getElementById('user-score').innerText = urlParams.get('score') || '0';
 
         btn.addEventListener('click', () => {
-            // 1. Вибрация
             if (tg.HapticFeedback) {
                 tg.HapticFeedback.impactOccurred('heavy');
             }
 
-            // 2. Звук (форсируем воспроизведение)
             audio.currentTime = 0;
-            audio.play().catch(e => console.log("Ошибка звука:", e));
+            audio.play().catch(e => console.log("Sound error:", e));
 
-            // 3. Отправка данных
+            btn.style.transform = "scale(0.92)";
+            
             setTimeout(() => {
                 tg.sendData("rich_button_clicked");
-                tg.close(); // Оставляем закрытие, чтобы юзер видел счет на оплату
-            }, 300);
+                tg.close();
+            }, 400);
         });
     </script>
 </body>
