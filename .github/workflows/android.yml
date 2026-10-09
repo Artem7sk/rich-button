@@ -21,7 +21,13 @@ jobs:
       - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - uses: gradle/actions/setup-gradle@v4
       - run: node --test tests/core.test.cjs
-      - run: ./gradlew --no-daemon lintDebug assembleDebug
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --package-lock=false playwright@1.51.1
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/scan-ui.cjs && node tests/ui.cjs
+      - run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: PaidFlow-test-APK

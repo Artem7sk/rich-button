@@ -24,8 +24,11 @@ public final class ScanImageProvider extends ContentProvider {
 
     @Override public String getType(Uri uri){return "image/jpeg";}
     @Override public ParcelFileDescriptor openFile(Uri uri,String mode)throws FileNotFoundException{
-        if(!"w".equals(mode)&&!"rw".equals(mode)&&!"rwt".equals(mode))throw new FileNotFoundException("Unsupported access mode");
-        return ParcelFileDescriptor.open(captureFile(uri),ParcelFileDescriptor.MODE_READ_WRITE|ParcelFileDescriptor.MODE_TRUNCATE);
+        // The camera writes through this provider; OCR then reads the same URI.
+        // In particular, opening "r" or "rw" must never truncate the photo.
+        final int flags;
+        try{flags=ParcelFileDescriptor.parseMode(mode);}catch(IllegalArgumentException e){throw new FileNotFoundException("Unsupported access mode");}
+        return ParcelFileDescriptor.open(captureFile(uri),flags);
     }
     @Override public Cursor query(Uri uri,String[] projection,String selection,String[] selectionArgs,String sortOrder){
         File file;try{file=captureFile(uri);}catch(FileNotFoundException e){throw new IllegalArgumentException("Invalid scan image URI",e);}String[] columns=projection==null?new String[]{OpenableColumns.DISPLAY_NAME,OpenableColumns.SIZE}:projection;MatrixCursor cursor=new MatrixCursor(columns);

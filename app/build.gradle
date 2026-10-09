@@ -7,14 +7,19 @@ def hasReleaseSigning = [releaseStorePath, releaseStorePassword, releaseKeyAlias
 android {
  namespace 'com.paidflow.app'
  compileSdk 36
- defaultConfig { applicationId 'com.paidflow.app'; minSdk 26; targetSdk 36; versionCode 31; versionName '0.3.1' }
+ defaultConfig { applicationId 'com.paidflow.app'; minSdk 26; targetSdk 36; versionCode 32; versionName '0.3.2' }
+ testOptions { unitTests.includeAndroidResources = true }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
  signingConfigs {
   if (hasReleaseSigning) { release { storeFile file(releaseStorePath); storePassword releaseStorePassword; keyAlias releaseKeyAlias; keyPassword releaseKeyPassword } }
  }
  buildTypes { release { minifyEnabled false; if (hasReleaseSigning) signingConfig signingConfigs.release } }
 }
-dependencies { implementation 'cz.adaptech.tesseract4android:tesseract4android:4.9.0' }
+dependencies {
+ implementation 'cz.adaptech.tesseract4android:tesseract4android:4.9.0'
+ testImplementation 'junit:junit:4.13.2'
+ testImplementation 'org.robolectric:robolectric:4.14.1'
+}
 
 def ocrAssets = file('src/main/assets/tessdata')
 tasks.register('prepareOcrModels', Exec) {
