@@ -27,8 +27,8 @@ public final class ScanImageProvider extends ContentProvider {
         if(!"w".equals(mode)&&!"rw".equals(mode)&&!"rwt".equals(mode))throw new FileNotFoundException("Unsupported access mode");
         return ParcelFileDescriptor.open(captureFile(uri),ParcelFileDescriptor.MODE_READ_WRITE|ParcelFileDescriptor.MODE_TRUNCATE);
     }
-    @Override public Cursor query(Uri uri,String[] projection,String selection,String[] selectionArgs,String sortOrder)throws FileNotFoundException{
-        File file=captureFile(uri);String[] columns=projection==null?new String[]{OpenableColumns.DISPLAY_NAME,OpenableColumns.SIZE}:projection;MatrixCursor cursor=new MatrixCursor(columns);
+    @Override public Cursor query(Uri uri,String[] projection,String selection,String[] selectionArgs,String sortOrder){
+        File file;try{file=captureFile(uri);}catch(FileNotFoundException e){throw new IllegalArgumentException("Invalid scan image URI",e);}String[] columns=projection==null?new String[]{OpenableColumns.DISPLAY_NAME,OpenableColumns.SIZE}:projection;MatrixCursor cursor=new MatrixCursor(columns);
         Object[] values=new Object[columns.length];for(int i=0;i<columns.length;i++){if(OpenableColumns.DISPLAY_NAME.equals(columns[i]))values[i]=file.getName();else if(OpenableColumns.SIZE.equals(columns[i]))values[i]=file.length();}
         cursor.addRow(values);return cursor;
     }
