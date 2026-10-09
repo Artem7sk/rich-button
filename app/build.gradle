@@ -1,0 +1,26 @@
+plugins { id 'com.android.application' }
+def releaseStorePath = System.getenv('PAIDFLOW_UPLOAD_KEYSTORE_PATH')
+def releaseStorePassword = System.getenv('PAIDFLOW_UPLOAD_STORE_PASSWORD')
+def releaseKeyAlias = System.getenv('PAIDFLOW_UPLOAD_KEY_ALIAS')
+def releaseKeyPassword = System.getenv('PAIDFLOW_UPLOAD_KEY_PASSWORD')
+def hasReleaseSigning = [releaseStorePath, releaseStorePassword, releaseKeyAlias, releaseKeyPassword].every { it != null && !it.isEmpty() }
+android {
+ namespace 'com.paidflow.app'
+ compileSdk 36
+ defaultConfig { applicationId 'com.paidflow.app'; minSdk 26; targetSdk 36; versionCode 30; versionName '0.3.0' }
+ compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+ signingConfigs {
+  if (hasReleaseSigning) { release { storeFile file(releaseStorePath); storePassword releaseStorePassword; keyAlias releaseKeyAlias; keyPassword releaseKeyPassword } }
+ }
+ buildTypes { release { minifyEnabled false; if (hasReleaseSigning) signingConfig signingConfigs.release } }
+}
+dependencies { implementation 'cz.adaptech.tesseract4android:tesseract4android:4.9.0' }
+
+def ocrAssets = file('src/main/assets/tessdata')
+tasks.register('prepareOcrModels', Exec) {
+ workingDir rootProject.projectDir
+ commandLine 'bash', 'scripts/prepare-tessdata.sh'
+ inputs.property('modelCommit', '87416418657359cb625c412a48b6e1d6d41c29bd')
+ outputs.files(file("${ocrAssets}/eng.traineddata"), file("${ocrAssets}/rus.traineddata"))
+}
+tasks.configureEach { if (name == 'preBuild') dependsOn tasks.named('prepareOcrModels') }
