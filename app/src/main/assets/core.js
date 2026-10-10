@@ -58,7 +58,9 @@ function parseClientRequisitesText(raw){
  const binRaw=value(/(?:БИН\s*[\/-]\s*ИИН|ИИН\s*[\/-]\s*БИН|БИН|ИИН|BIN\s*[\/-]\s*IIN|IIN\s*[\/-]\s*BIN|BIN|IIN|ИНН)\s*[:№-]?\s*(.*)$/iu);
  let binIin=(binRaw.match(/(?:\d[\s-]*){10,14}/)||[])[0]||'';binIin=binIin.replace(/\D/g,'');if(![10,12].includes(binIin.length))binIin='';
  const accountRaw=value(/(?:ИИК|И\s*И\s*К|IBAN|Р\/?С(?:Ч)?|РАСЧ[ЕЁ]ТНЫЙ\s+СЧ[ЕЁ]Т|ТЕКУЩИЙ\s+СЧ[ЕЁ]Т|BANK\s+ACCOUNT|ACCOUNT\s+NUMBER)\s*[:№-]?\s*(.*)$/iu);
- const account=(accountRaw.match(/\bKZ(?:[\s-]*[A-Z0-9]){18,24}\b/i)||accountRaw.match(/(?:\d[\d\s-]{9,32}\d)/)||[])[0]?.replace(/[\s-]/g,'').toUpperCase()||'';
+ const latinAccount=value=>value.toUpperCase().replace(/[АВЕКМНОРСТХУ]/g,c=>({'А':'A','В':'B','Е':'E','К':'K','М':'M','Н':'H','О':'O','Р':'P','С':'C','Т':'T','Х':'X','У':'Y'}[c]));
+ const kzAccount=value=>(latinAccount(value).match(/\bKZ[\s-]*\d[\s-]*\d(?:[\s-]*[A-Z0-9]){16}(?![A-Z0-9])/i)||[])[0];
+ const account=(kzAccount(accountRaw)||kzAccount(all)||(accountRaw.match(/(?:\d[\d\s-]{9,32}\d)/)||[])[0]||'').replace(/[\s-]/g,'').toUpperCase();
  const bic=value(/(?:БИК(?:\s+БАНКА)?|SWIFT(?:\s*\/?\s*BIC)?|BIC(?:\s*\/?\s*SWIFT)?)\s*[:№-]?\s*(.*)$/iu).replace(/[^A-Z0-9]/gi,'').toUpperCase().slice(0,32);
  const kbeRaw=value(/(?:КБЕ|KBE)\s*[:№-]?\s*(.*)$/iu),kbe=(kbeRaw.match(/\b\d{2}\b/)||[])[0]||'';
  let name=value(/(?:наименование\s+(?:организации|компании|поставщика|получателя)|организация|компания|поставщик|получатель|клиент|company\s+name|business\s+name|recipient)\s*[:№-]?\s*(.*)$/iu,/\s+(?=(?:бин|иин|инн|адрес|бик|кбе|и\s*и\s*к|iban)(?:\s|$))/iu);

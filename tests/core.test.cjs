@@ -38,3 +38,5 @@ test('CSV preserves exact amounts, quotes text and neutralizes spreadsheet formu
 test('business bank fields survive backup and remain fixed on existing invoices',()=>{
  const {s,client}=fixture();s.saveSettings({...s.data.settings,binIin:'123456789012',account:'KZ86125KZT5004100100',bic:'HSBKKZKX',kbe:'17',bank:'Bank',address:'Almaty'});const id=invoice(s,client);s.saveSettings({...s.data.settings,bank:'New Bank'});assert.equal(s.invoice(id).seller.bank,'Bank');assert.equal(new P.Store(JSON.parse(JSON.stringify(s.data))).invoice(id).seller.binIin,'123456789012');
 });
+
+test('Kazakhstan IBAN is detected when the OCR damages the account label',()=>{const r=P.parseClientRequisitesText('Организация: ТОО Альфа\nHИK: КZ86125KZT5004100100');assert.equal(r.account,'KZ86125KZT5004100100');});

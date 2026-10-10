@@ -50,7 +50,7 @@ public class NativeScanTest {
             awaitJs(scenario,"document.querySelector('#binIin')?.value==='123456789012'");
             assertEquals("\"Draft preserved\"",js(scenario,"document.querySelector('#notes').value"));
             assertEquals("\"HSBKKZKX\"",js(scenario,"document.querySelector('#bic').value"));
-            assertEquals("\"KZ86125KZT5004100100\"",js(scenario,"document.querySelector('#account').value"));
+            assertEquals("OCR text: "+js(scenario,"document.querySelector('#client-scan-text').textContent"),"\"KZ86125KZT5004100100\"",js(scenario,"document.querySelector('#account').value"));
         }
     }
     @Test public void invoicePhotoAddsItemsAndOffersNewClient()throws Exception{
