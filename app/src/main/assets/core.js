@@ -18,7 +18,7 @@ function parseOcrMoney(value){
  const n=Number(s);if(!Number.isFinite(n)||n<=0||n>MAX/100)return null;return Math.round(n*100);
 }
 function ocrLines(raw){return String(raw??'').normalize('NFKC').replace(/[\u00a0\u202f]/g,' ').split(/\n+/).map(x=>x.replace(/[\t\r]+/g,' ').trim().replace(/\s{2,}/g,' ')).filter(Boolean);}
-function labeledValue(lines,pattern,stop){for(let n=0;n<lines.length;n++){const m=lines[n].match(pattern);if(!m)continue;const same=(m[1]||'').trim().replace(/^[\s:;=—-]+/,'');if(same)return stop?same.split(stop)[0].trim():same;const next=lines[n+1]||'';if(next&&!/^(?:бин|иин|инн|кпп|огрн|бик|кбе|и\s*и\s*к|iban|тел\.?|телефон|email|e-?mail)\b/i.test(next))return next.trim();}return '';}
+function labeledValue(lines,pattern,stop){for(let n=0;n<lines.length;n++){const m=lines[n].match(pattern);if(!m)continue;const same=(m[1]||'').trim().replace(/^[\s:;=—-]+/,'');if(same)return stop?same.split(stop)[0].trim():same;const next=lines[n+1]||'';if(next&&!/^(?:бин|иин|инн|кпп|огрн|бик|кбе|и\s*и\s*к|iban|тел\.?|телефон|email|e-?mail)(?=[\s:№-]|$)/i.test(next))return next.trim();}return '';}
 function parseInvoiceText(raw){
  const lines=ocrLines(raw),textValue=lines.join('\n');
  const dueValue=labeledValue(lines,/(?:срок\s+(?:оплаты|платежа)|оплатить\s+до|дата\s+оплаты|due\s+date)\s*[:№-]?\s*(.*)$/iu);
@@ -27,7 +27,7 @@ function parseInvoiceText(raw){
  const parseDate=value=>{let m=String(value).match(/(?<!\d)(\d{4})[./-](\d{1,2})[./-](\d{1,2})(?!\d)/);let y,mo,d;if(m){[,y,mo,d]=m;}else{m=String(value).match(/(?<!\d)(\d{1,2})[./-](\d{1,2})[./-](\d{4})(?!\d)/);if(!m)return null;[,d,mo,y]=m;}const result=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;return dateOK(result)?result:null;};
  const currencyOf=value=>{if(/(?:\bRUB\b|₽|руб(?:\.|лей|ля|ль)?)/iu.test(value))return 'RUB';if(/(?:\bUSD\b|\$)/i.test(value))return 'USD';if(/(?:\bEUR\b|€)/i.test(value))return 'EUR';if(/(?:\bGBP\b|£)/i.test(value))return 'GBP';if(/\bKZT\b|₸|тенге|тг\.?/iu.test(value))return 'KZT';return null;};
  const currency=lines.map(line=>({line,currency:currencyOf(line)})).find(x=>x.currency&&/(?:итого|всего|к оплате|total|amount due|сумма к оплате)/i.test(x.line))?.currency||lines.map(currencyOf).find(Boolean)||currencyOf(textValue);
- const ignored=/^(?:итого|всего|к оплате|сумма|ндс|налог|количество|кол-?во|наименование|цена|стоимость|срок|покупатель|заказчик|получатель|контрагент|клиент|бин|иин|инн|кпп|огрн|бик|кбе|банк|item|description|qty|quantity|price|amount)\b/i;
+ const ignored=/^(?:итого|всего|к оплате|сумма|ндс|налог|количество|кол-?во|наименование|цена|стоимость|срок|покупатель|заказчик|получатель|контрагент|клиент|бин|иин|инн|кпп|огрн|бик|кбе|банк|item|description|qty|quantity|price|amount)(?=[\s:№-]|$)/i;
  const cleanMoneyText=value=>String(value).replace(/(?:₽|руб(?:\.|лей|ля|ль)?|тенге|тг\.?|RUB|USD|EUR|GBP|KZT|[$€£₸])/giu,'').trim();
  const parseMoney=value=>parseOcrMoney(String(value).replace(/[\s\u00a0\u202f]/g,''));
  const amountToken='(?:\\d{1,3}(?:[ \\t.,]\\d{3})+|\\d+)(?:[.,]\\d{1,2})?';
@@ -60,7 +60,7 @@ function parseClientRequisitesText(raw){
  const bic=value(/(?:БИК(?:\s+БАНКА)?|SWIFT(?:\s*\/?\s*BIC)?|BIC(?:\s*\/?\s*SWIFT)?)\s*[:№-]?\s*(.*)$/iu).replace(/[^A-Z0-9]/gi,'').toUpperCase().slice(0,32);
  const kbeRaw=value(/(?:КБЕ|KBE)\s*[:№-]?\s*(.*)$/iu),kbe=(kbeRaw.match(/\b\d{2}\b/)||[])[0]||'';
  let name=value(/(?:наименование\s+(?:организации|компании|поставщика|получателя)|организация|компания|поставщик|получатель|клиент|company\s+name|business\s+name|recipient)\s*[:№-]?\s*(.*)$/iu,/\s+(?=(?:бин|иин|инн|адрес|бик|кбе|и\s*и\s*к|iban)(?:\s|$))/iu);
- if(!name)name=lines.find(line=>/^(?:ТОО|ИП|АО|ООО|ОАО|ЗАО|LLP|LTD|LLC|JSC)\b/i.test(line)&&!/(?:банк|bank)/i.test(line))||'';
+ if(!name)name=lines.find(line=>/^(?:ТОО|ИП|АО|ООО|ОАО|ЗАО|LLP|LTD|LLC|JSC)(?=[\s«"“]|$)/i.test(line)&&!/(?:банк|bank)/i.test(line))||'';
  name=name.replace(/[;,]+$/,'').slice(0,150);
  const address=value(/(?:юридический\s+адрес|адрес\s+(?:регистрации|местонахождения|организации|компании)|адрес|legal\s+address|registered\s+address)\s*[:№-]?\s*(.*)$/iu,/\s+(?=(?:бин|иин|инн|бик|кбе|и\s*и\s*к|iban|тел\.?|телефон|email)(?:\s|$))/iu).slice(0,500);
  const bank=value(/(?:наименование\s+банка|банк\s+получателя|(?:^|\s)банк(?!а)|bank\s+name|\bbank\b)\s*[:№-]?\s*(.*)$/iu,/\s+(?=(?:бик|swift|bic|кбе|и\s*и\s*к|iban)(?:\s|$))/iu).slice(0,200);
