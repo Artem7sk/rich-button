@@ -23,3 +23,18 @@ test('client requisites OCR extracts Kazakhstan company and bank fields',()=>{co
 test('new client requisites persist and older local backups remain readable',()=>{const old=P.empty();old.settings.business='Studio';old.clients.push({id:'legacy-client',name:'Legacy',email:'',phone:'',notes:''});const legacy=new P.Store(old);const id=legacy.saveClient({name:'NewCo',email:'',phone:'',notes:'',binIin:'123456789012',address:'Almaty',account:'KZ123456789012345678',bic:'KCJBKZKX',kbe:'17',bank:'Example Bank'});legacy.create({clientId:'legacy-client',due:P.addDays(7),currency:'USD',items:[{name:'Work',qty:1,unit:100}],notes:''});legacy.create({clientId:id,due:P.addDays(7),currency:'USD',items:[{name:'Work',qty:1,unit:100}],notes:''});const copy=new P.Store(JSON.parse(JSON.stringify(legacy.data)));assert.equal(copy.data.clients.find(c=>c.id===id).account,'KZ123456789012345678');assert.equal(copy.data.invoices.length,2);});
 
  test('invoice OCR never counts Russian totals as invoice items',()=>{const result=P.parseInvoiceText('Покупатель: ТОО Новый клиент\n1. Бумага 2 шт 1 200,00 2 400,00\nИтого: 2 400,00 KZT');assert.equal(result.items.length,1);assert.equal(result.total,240000);assert.equal(result.declaredTotal,240000);});
+
+test('invoice OCR separates buyer details from supplier bank block',()=>{
+ const r=P.parseInvoiceText('Получатель: ТОО Продавец\nБИН: 111111111111\nИИК: KZ111111111111111111\nПокупатель: ТОО Покупатель\nБИН: 222222222222\nАдрес: Алматы\nИИК: KZ222222222222222222\nБИК: HSBKKZKX\nНаименование\n1 Бумага 2 100,00 200,00\nИтого: 200,00 KZT');
+ assert.equal(r.clientName,'ТОО Покупатель');assert.equal(r.clientDetails.binIin,'222222222222');assert.equal(r.clientDetails.account,'KZ222222222222222222');assert.equal(r.items.length,1);assert.equal(r.total,20000);
+});
+test('debt report keeps currencies separate and uses remaining balance and ageing',()=>{
+ const {s,client}=fixture();const a=invoice(s,client,'2026-09-30','KZT');s.payment(a,100,P.today(),'');invoice(s,client,'2026-07-01','KZT');invoice(s,client,'2026-10-15','USD');const cancelled=invoice(s,client,'2026-09-01','KZT');s.cancel(cancelled);
+ const rows=P.receivables(s.data.invoices,'2026-10-10');assert.deepEqual(rows,[{currency:'KZT',current:0,days1to30:203,days31to60:0,days61plus:303,total:506,count:2},{currency:'USD',current:303,days1to30:0,days31to60:0,days61plus:0,total:303,count:1}]);
+});
+test('CSV preserves exact amounts, quotes text and neutralizes spreadsheet formulas',()=>{
+ const {s,client}=fixture();s.saveClient({name:'=1+1;"quoted"',email:'',phone:'',notes:'',binIin:'001122334455'},client);const id=invoice(s,client);s.payment(id,100,P.today(),'');const csv=P.invoiceCsv(s.data.invoices);assert.ok(csv.startsWith('\ufeff'));assert.ok(csv.includes('"\'=1+1;""quoted"""'));assert.ok(csv.includes('"3.03";"1.00";"2.03"'));assert.ok(csv.includes('001122334455'));
+});
+test('business bank fields survive backup and remain fixed on existing invoices',()=>{
+ const {s,client}=fixture();s.saveSettings({...s.data.settings,binIin:'123456789012',account:'KZ86125KZT5004100100',bic:'HSBKKZKX',kbe:'17',bank:'Bank',address:'Almaty'});const id=invoice(s,client);s.saveSettings({...s.data.settings,bank:'New Bank'});assert.equal(s.invoice(id).seller.bank,'Bank');assert.equal(new P.Store(JSON.parse(JSON.stringify(s.data))).invoice(id).seller.binIin,'123456789012');
+});

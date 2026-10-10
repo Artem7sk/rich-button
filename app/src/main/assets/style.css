@@ -2,3 +2,5 @@
 .scan-text{margin:12px 0 0;max-height:220px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--muted);font:12px/1.5 ui-monospace,monospace}
 
 .scan-status{padding:14px;border:1px solid var(--mint);border-radius:12px;font-size:13px;line-height:1.6;white-space:pre-wrap}.scan-status[data-state=error]{border-color:var(--red);color:var(--red)}button:disabled{opacity:.55;cursor:wait}[hidden]{display:none!important}
+
+details{margin:14px 0;border:1px solid var(--line);border-radius:12px;padding:14px}summary{cursor:pointer;color:var(--mint);font-size:13px}.card h3{overflow-wrap:anywhere}.summary-list{margin-top:16px}

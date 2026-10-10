@@ -1,5 +1,5 @@
 const {chromium}=require('playwright');
-const path=require('node:path'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 (async()=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  const page=await browser.newPage({viewport:{width:390,height:844},locale:'ru-RU'});
@@ -53,8 +53,23 @@ const path=require('node:path'),assert=require('node:assert/strict');
  assert.equal(await page.locator('#client option:checked').textContent(),'ТОО Новый клиент');
  assert.equal(await page.locator('#inv-currency').inputValue(),'KZT');
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ await page.evaluate(()=>{closeModal();store.saveSettings({...store.data.settings,binIin:'123456789012',account:'KZ86125KZT5004100100',bic:'HSBKKZKX',kbe:'17',bank:'Test Bank'});const id=store.create({clientId:store.data.clients[1].id,due:PF.today(),currency:'KZT',items:[{name:'Copy service',qty:2,unit:45000}],notes:'Copy note'});store.payment(id,100,PF.today(),'Original payment');detail=id;tab='invoices';render();});
+ await page.getByRole('button',{name:'Создать похожий счёт',exact:true}).click();
+ assert.equal(await page.locator('.line-name').inputValue(),'Copy service');
+ assert.equal(await page.locator('#due').inputValue(),await page.evaluate(()=>PF.addDays(7)));
+ await page.locator('#invoice-form button[type=submit]').click();
+ assert.equal(await page.evaluate(()=>store.invoice(detail).payments.length),0);
+ assert.equal(await page.evaluate(()=>store.data.invoices[0].payments.length),1);
+ assert.equal(await page.locator('h1').textContent(),'PF-0002');
+ const pdf=await page.evaluate(()=>pdfHtml(store.invoice(detail)));assert.ok(pdf.includes('Test Bank'));assert.ok(pdf.includes('KZ86125KZT5004100100'));
+ await page.evaluate(()=>{tab='clients';detail=null;render();});
+ await page.locator('#client-query').fill('Новый клиент');assert.equal(await page.locator('#client-list .card').count(),1);
+ await page.locator('#client-query').fill('missing');assert.equal(await page.locator('#client-list .card').count(),0);
+ await page.evaluate(()=>{tab='settings';render();});
+ await page.getByRole('button',{name:'Отчёт по задолженности',exact:true}).click();
+ assert.ok((await page.locator('.modal').textContent()).includes('KZT'));
  assert.deepEqual(errors,[]);
- await page.screenshot({path:process.env.SCAN_SCREENSHOT||'/tmp/paidflow-scan-result.png'});
+ fs.mkdirSync(path.resolve(__dirname,'../qa'),{recursive:true});await page.screenshot({path:path.resolve(__dirname,'../qa/07-report.png')});
  console.log('Scan UI passed: draft recovery, 7 client fields, persistent error/retry, missing form recovery, invoice items, new/existing client, paid invoice locks.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

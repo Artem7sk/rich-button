@@ -22,7 +22,7 @@ function labeledValue(lines,pattern,stop){for(let n=0;n<lines.length;n++){const 
 function parseInvoiceText(raw){
  const lines=ocrLines(raw),textValue=lines.join('\n');
  const dueValue=labeledValue(lines,/(?:срок\s+(?:оплаты|платежа)|оплатить\s+до|дата\s+оплаты|due\s+date)\s*[:№-]?\s*(.*)$/iu);
- let clientName=labeledValue(lines,/(?:покупатель|заказчик|получатель|контрагент|клиент|bill\s+to|customer)\s*[:№-]?\s*(.*)$/iu,/\s+(?=(?:БИН|ИИН|ИНН|КПП|ОГРН|тел\.?|телефон|e-?mail)(?:\s|$))/iu);
+ let clientName=labeledValue(lines,/(?:покупатель|заказчик|контрагент|клиент|bill\s+to|customer)\s*[:№-]?\s*(.*)$/iu,/\s+(?=(?:БИН|ИИН|ИНН|КПП|ОГРН|тел\.?|телефон|e-?mail)(?:\s|$))/iu);
  clientName=clientName.replace(/[;,]+$/,'').slice(0,150);
  const parseDate=value=>{let m=String(value).match(/(?<!\d)(\d{4})[./-](\d{1,2})[./-](\d{1,2})(?!\d)/);let y,mo,d;if(m){[,y,mo,d]=m;}else{m=String(value).match(/(?<!\d)(\d{1,2})[./-](\d{1,2})[./-](\d{4})(?!\d)/);if(!m)return null;[,d,mo,y]=m;}const result=`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;return dateOK(result)?result:null;};
  const currencyOf=value=>{if(/(?:\bRUB\b|₽|руб(?:\.|лей|ля|ль)?)/iu.test(value))return 'RUB';if(/(?:\bUSD\b|\$)/i.test(value))return 'USD';if(/(?:\bEUR\b|€)/i.test(value))return 'EUR';if(/(?:\bGBP\b|£)/i.test(value))return 'GBP';if(/\bKZT\b|₸|тенге|тг\.?/iu.test(value))return 'KZT';return null;};
@@ -45,10 +45,12 @@ function parseInvoiceText(raw){
  }
  let declaredTotal=null;
  for(let n=0;n<lines.length;n++){const line=cleanMoneyText(lines[n]);const match=line.match(/^(?:итого(?:\s+к\s+оплате)?|всего(?:\s+к\s+оплате)?|сумма\s+к\s+оплате|к\s+оплате|total|amount\s+due)\s*[:=]?\s*([\d., ]*)\s*$/iu);if(match){declaredTotal=parseMoney(match[1]);if(!declaredTotal&&lines[n+1])declaredTotal=parseMoney(cleanMoneyText(lines[n+1]));if(declaredTotal)break;}}
- let total=null;
+ let total=null;const totalOnly=!items.length&&!!declaredTotal;
  if(items.length){const sum=items.reduce((n,item)=>n+item.qty*item.unit,0);if(Number.isSafeInteger(sum)&&sum<=MAX)total=sum;}
  else if(declaredTotal){total=declaredTotal;items.push({name:'Услуги по счёту',qty:1,unit:declaredTotal});}
- return {clientName,due:parseDate(dueValue),currency,items,total,declaredTotal};
+ const buyerStart=lines.findIndex(line=>/^(?:покупатель|заказчик|контрагент|клиент|bill\s+to|customer)(?=[\s:№-]|$)/iu.test(line));
+ let clientDetails={};if(buyerStart>=0){const buyerLines=[];for(let n=buyerStart;n<lines.length;n++){if(n>buyerStart&&/^(?:поставщик|продавец|получатель|основание|наименование|товары|услуги|№|итого|всего|supplier|seller|items|description|total)(?=[\s:№-]|$)/iu.test(lines[n]))break;if(n>buyerStart&&/^\d+[.)]?\s/.test(lines[n]))break;buyerLines.push(lines[n]);}clientDetails=parseClientRequisitesText(buyerLines.join('\n'));clientDetails.name=clientName;}
+ return {clientName,clientDetails,due:parseDate(dueValue),currency,items,total,declaredTotal,totalOnly};
 }
 function parseClientRequisitesText(raw){
  const lines=ocrLines(raw),all=lines.join('\n');
@@ -71,7 +73,7 @@ function parseClientRequisitesText(raw){
 const uid=()=>typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)+'-'+Math.random().toString(36).slice(2);
 function empty(lang='ru'){return {schema:1,settings:{business:'',contact:'',details:'',currency:'USD',language:lang},clients:[],invoices:[]};}
 function text(o,k,max,required=false){if(!o||typeof o[k]!=='string'||o[k].length>max||(required&&!o[k].trim()))throw Error('text:'+k);}
-function settings(s){text(s,'business',150);text(s,'contact',500);text(s,'details',2000);if(!CURRENCIES.includes(s.currency)||!['ru','en'].includes(s.language))throw Error('settings');}
+function settings(s){text(s,'business',150);text(s,'contact',500);text(s,'details',2000);for(const [key,max] of Object.entries({binIin:30,address:500,account:60,bic:32,kbe:10,bank:200}))if(s[key]!==undefined)text(s,key,max);if(!CURRENCIES.includes(s.currency)||!['ru','en'].includes(s.language))throw Error('settings');}
 function client(c){text(c,'id',100,true);text(c,'name',150,true);text(c,'email',200);text(c,'phone',80);text(c,'notes',2000);for(const [key,max] of Object.entries({binIin:30,address:500,account:60,bic:32,kbe:10,bank:200})){if(c[key]!==undefined)text(c,key,max);}}
 function array(a,max){if(!Array.isArray(a)||a.length>max)throw Error('array');}
 function validate(d){
@@ -80,6 +82,16 @@ function validate(d){
  for(const c of d.clients){client(c);if(clients.has(c.id))throw Error('duplicate');clients.add(c.id);}
  for(const i of d.invoices){text(i,'id',100,true);if(ids.has(i.id))throw Error('duplicate');ids.add(i.id);if(!Number.isSafeInteger(i.seq)||i.seq<1||i.seq>1e8||seqs.has(i.seq))throw Error('seq');seqs.add(i.seq);if(!clients.has(i.clientId)||i.client.id!==i.clientId)throw Error('client');client(i.client);settings(i.seller);if(!dateOK(i.created)||!dateOK(i.due)||!CURRENCIES.includes(i.currency)||typeof i.cancelled!=='boolean')throw Error('invoice');text(i,'notes',2000);array(i.items,100);array(i.payments,1000);array(i.reminders,1000);if(i.items.length<1)throw Error('items');for(const l of i.items){text(l,'name',300,true);lineTotal(l);}if(total(i)>MAX)throw Error('total');const pids=new Set();for(const p of i.payments){text(p,'id',100,true);text(p,'note',500);if(pids.has(p.id))throw Error('duplicate');pids.add(p.id);if(!Number.isSafeInteger(p.amount)||p.amount<=0||p.amount>MAX||!dateOK(p.date))throw Error('payment');}if(balance(i)<0||(i.cancelled&&paid(i)>0))throw Error('balance');for(const r of i.reminders){text(r,'text',5000,true);if(!dateOK(r.date))throw Error('reminder');}}
  if(JSON.stringify(d).length>10*1024*1024)throw Error('size');return true;
+}
+function receivables(invoices,now=today()){
+ const groups=new Map();for(const i of invoices){if(i.cancelled||balance(i)<=0)continue;if(!groups.has(i.currency))groups.set(i.currency,{currency:i.currency,current:0,days1to30:0,days31to60:0,days61plus:0,total:0,count:0});const g=groups.get(i.currency),days=Math.floor((Date.parse(now+'T12:00:00Z')-Date.parse(i.due+'T12:00:00Z'))/86400000),due=balance(i);g[days<=0?'current':days<=30?'days1to30':days<=60?'days31to60':'days61plus']+=due;g.total+=due;g.count++;}return [...groups.values()];
+}
+function invoiceCsv(invoices,lang='ru'){
+ const labels=lang==='ru'?['Номер','Клиент','БИН/ИИН','Дата','Оплатить до','Валюта','Всего','Оплачено','Остаток','Статус']:['Number','Client','BIN/IIN','Issued','Due','Currency','Total','Paid','Balance','Status'];
+ const names=lang==='ru'?{cancelled:'Отменён',paid:'Оплачен',partial:'Частичная оплата',overdue:'Просрочен',pending:'Ожидает оплаты'}:{cancelled:'Cancelled',paid:'Paid',partial:'Partly paid',overdue:'Overdue',pending:'Pending'};
+ const cell=v=>'"'+String(/^[\s]*[=+@-]/.test(String(v))?"'"+v:v).replace(/"/g,'""')+'"';
+ const rows=invoices.map(i=>['PF-'+String(i.seq).padStart(4,'0'),i.client.name,i.client.binIin||'',i.created,i.due,i.currency,(total(i)/100).toFixed(2),(paid(i)/100).toFixed(2),(i.cancelled?0:balance(i)/100).toFixed(2),names[status(i)]]);
+ return '\ufeff'+[labels,...rows].map(row=>row.map(cell).join(';')).join('\r\n');
 }
 class Store {
  constructor(data,persist=()=>{}){validate(data);this.data=clone(data);this.persist=persist;}
@@ -95,5 +107,5 @@ class Store {
  remind(id,message){return this.change(d=>{const i=d.invoices.find(i=>i.id===id);if(i.cancelled||balance(i)===0)throw Error('closed');i.reminders.push({date:today(),text:message});});}
  restore(raw){const next=JSON.parse(raw);validate(next);this.persist(JSON.stringify(next));this.data=clone(next);}
 }
-return {MAX,CURRENCIES,amount,lineTotal,total,paid,balance,status,money,today,addDays,dateOK,parseInvoiceText,parseClientRequisitesText,empty,validate,Store};
+return {MAX,CURRENCIES,amount,lineTotal,total,paid,balance,status,money,today,addDays,dateOK,parseInvoiceText,parseClientRequisitesText,receivables,invoiceCsv,empty,validate,Store};
 });
