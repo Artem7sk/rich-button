@@ -7,7 +7,7 @@ def hasReleaseSigning = [releaseStorePath, releaseStorePassword, releaseKeyAlias
 android {
  namespace 'com.paidflow.app'
  compileSdk 36
- defaultConfig { applicationId 'com.paidflow.app'; minSdk 26; targetSdk 36; versionCode 40; versionName '0.4.0' }
+ defaultConfig { applicationId 'com.paidflow.app'; minSdk 26; targetSdk 36; versionCode 40; versionName '0.4.0'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner' }
  testOptions { unitTests.includeAndroidResources = true }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
  signingConfigs {
@@ -17,6 +17,9 @@ android {
 }
 dependencies {
  implementation 'cz.adaptech.tesseract4android:tesseract4android:4.9.0'
+ androidTestImplementation 'androidx.test:runner:1.6.2'
+ androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+ androidTestImplementation 'androidx.test:core:1.6.1'
  testImplementation 'junit:junit:4.13.2'
  testImplementation 'org.robolectric:robolectric:4.14.1'
 }

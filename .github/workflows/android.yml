@@ -28,6 +28,19 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node tests/scan-ui.cjs && node tests/ui.cjs
       - run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify native OCR and camera return
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: ./gradlew --no-daemon connectedDebugAndroidTest
       - uses: actions/upload-artifact@v4
         with:
           name: PaidFlow-test-APK
@@ -40,5 +53,7 @@ jobs:
           path: |
             qa/
             app/build/reports/tests/
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
             app/build/reports/lint-results-debug.html
           if-no-files-found: warn
